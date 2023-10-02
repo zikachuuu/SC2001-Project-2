@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import dataStructures.Edge;
+import dataStructures.Graph;
 import dataStructures.GraphAdjList;
 import dataStructures.GraphAdjMatrix;
 import dataStructures.HeapNode;
@@ -14,7 +15,15 @@ import dataStructures.UnionFind;
 
 public class GraphAlgo {
 	
-	public static void Dijkstra(GraphAdjList graph , int source) 
+	public static void Dijkstra (Graph graph , int source) {
+		if (graph instanceof GraphAdjList) Dijkstra((GraphAdjList)graph , source) ;
+		else if (graph instanceof GraphAdjMatrix) Dijkstra((GraphAdjMatrix)graph , source) ;
+	}
+	
+	/**
+	 * Uses Minimizing Heap as Priority Queue
+	 */
+	private static void Dijkstra(GraphAdjList graph , int source) 
 	{
 		/* Initilisation */
 		
@@ -78,7 +87,10 @@ public class GraphAlgo {
 		}
 	}
 	
-	public static void Dijkstra(GraphAdjMatrix graph , int source) 
+	/**
+	 * Uses Array as Priority Queue
+	 */
+	private static void Dijkstra(GraphAdjMatrix graph , int source) 
 	{
 		/* Initilisation */
 		
@@ -96,33 +108,31 @@ public class GraphAlgo {
 		}
 		shortestDist[source] = 0 ;
 		
-		int[] vertices = IntStream.range (0 , numVertices).toArray() ;
-		MinHeap pq = new MinHeap (shortestDist , vertices) ;
-		
 		/* while priority queue pq is not empty */
 
 		while (numUnvisited > 0) {
 			
-			HeapNode nearestNode = pq.popSmallest() ;
+			int nearestNode = -1 ;
+			for (int i = 0 ; i < numVertices ; i++) {
+				if (visited[i] == false && 
+						( nearestNode == -1 || shortestDist[i] < shortestDist[nearestNode] )
+					) nearestNode = i ;
+			}
 			
-			// if the nearestNode is already visited
-			if (visited[nearestNode.getValue()]) continue ;
-			
-			visited[nearestNode.getValue()]= true ;
+			visited[nearestNode]= true ;
 			numUnvisited-- ;
 			
-			int[] adjEdges = graph.getAdjEdges(nearestNode.getValue()) ;
+			int[] adjEdges = graph.getAdjEdges(nearestNode) ;
 			
 			for (int terminalVertex = 0 ; terminalVertex < adjEdges.length ; terminalVertex++) {
 				
 				if (adjEdges[terminalVertex] == -1 || visited [terminalVertex]) continue ;
 				
-				int altDist = shortestDist[nearestNode.getValue()] + adjEdges[terminalVertex] ;
+				int altDist = shortestDist[nearestNode] + adjEdges[terminalVertex] ;
 				
 				if (altDist < shortestDist[terminalVertex]) {
 					shortestDist[terminalVertex] = altDist ;
-					prevVertices[terminalVertex] = nearestNode.getValue() ;
-					pq.insert (altDist , terminalVertex) ;
+					prevVertices[terminalVertex] = nearestNode ;
 				}
 			}
 		}
@@ -231,4 +241,33 @@ public class GraphAlgo {
 		
 	}
 
+	public static void buildGraph(Graph graph , int numEdges , int maxWeight) {
+		
+		int numVertices = graph.getNumVertices() ;
+		
+		if (numEdges < numVertices - 1) throw new RuntimeException ("numEdges lower than the min possible number of edges to build a connected graph with specified number of vertices") ;
+		
+		if (numEdges > numVertices * (numVertices - 1)) throw new RuntimeException ("numEdges exceed max possible number of edges for a graph with specified number of vertices") ;
+		
+		ArrayList<Integer> connectedTree = new ArrayList<Integer>() ;
+		connectedTree.add(0) ;
+		
+		for (int v = 1 ; v < numVertices ; v++) {
+			int terminalVertex = connectedTree.get ((int)(Math.random() * connectedTree.size())) ;
+			connectedTree.add(terminalVertex) ;
+			graph.addEdge(v , terminalVertex , (int)(Math.random() * (maxWeight + 1))) ;
+		}
+	
+		for (int e = numVertices ; e < numEdges ; e++) {
+			
+			while (! graph.addEdge (
+					(int)(Math.random() * numVertices) , 
+					(int)(Math.random() * numVertices) , 
+					(int)(Math.random() * (maxWeight + 1))
+					)) ;
+		}
+		
+	}
+	
+	
 }
